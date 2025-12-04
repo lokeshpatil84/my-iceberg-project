@@ -1,0 +1,11 @@
+id,name,age,city,salary,created_date
+1,John Doe,30,New York,75000,2023-01-15
+2,Jane Smith,25,Los Angeles,65000,2023-02-20
+3,Mike Johnson,35,Chicago,80000,2023-03-10
+4,Sarah Wilson,28,Houston,70000,2023-04-05
+5,David Brown,32,Phoenix,72000,2023-05-12
+6,Emily Davis,29,Seattle,68000,2023-06-18
+7,Robert Miller,31,Boston,76000,2023-07-22
+8,Lisa Anderson,27,Denver,63000,2023-08-14
+9,James Wilson,33,Miami,78000,2023-09-09
+10,Maria Garcia,26,San Francisco,82000,2023-10-03
