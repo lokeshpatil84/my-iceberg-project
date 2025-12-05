@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: main
   pull_request:
-    branches: [main, develop]
+    branches: main
 
 env:
   AWS_REGION: us-east-1
@@ -15,55 +15,55 @@ jobs:
     name: Test & Validate
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install Python dependencies
-      run: |
-        pip install flake8 black
-    
-    - name: Lint Python
-      run: |
-        flake8 etl/ --max-line-length=127
-        black --check etl/
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-    
-    - name: Terraform Format Check
-      run: terraform fmt -check -recursive
-    
-    - name: Terraform Validate Dev
-      working-directory: ./environments/dev
-      run: |
-        terraform init -backend=false
-        terraform validate
-    
-    - name: Terraform Validate Prod
-      working-directory: ./environments/prod
-      run: |
-        terraform init -backend=false
-        terraform validate
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Python dependencies
+        run: |
+          pip install flake8==6.1.0 black==23.12.0
+
+      - name: Lint Python
+        run: |
+          flake8 etl/ --max-line-length=127
+          black --check etl/ --line-length 127
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate Dev
+        working-directory: ./environments/dev
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform Validate Prod
+        working-directory: ./environments/prod
+        run: |
+          terraform init -backend=false
+          terraform validate
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: test
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Run Checkov
-      uses: bridgecrewio/checkov-action@master
-      with:
-        directory: .
-        framework: terraform
-        soft_fail: true
+      - uses: actions/checkout@v4
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: true
 
   plan-dev:
     name: Plan Dev
@@ -72,25 +72,25 @@ jobs:
     if: github.event_name == 'pull_request'
     environment: development
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-    
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-    
-    - name: Terraform Plan Dev
-      working-directory: ./environments/dev
-      run: |
-        terraform init
-        terraform plan -var-file=terraform.tfvars
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Plan Dev
+        working-directory: ./environments/dev
+        run: |
+          terraform init
+          terraform plan -var-file=terraform.tfvars
 
   deploy-dev:
     name: Deploy Dev
@@ -99,30 +99,30 @@ jobs:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment: development
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-    
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-    
-    - name: Deploy to Dev
-      working-directory: ./environments/dev
-      run: |
-        terraform init
-        terraform apply -var-file=terraform.tfvars -auto-approve
-    
-    - name: Test ETL Job
-      run: |
-        JOB_NAME=$(terraform -chdir=environments/dev output -raw glue_job_name)
-        aws glue start-job-run --job-name $JOB_NAME
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Dev
+        working-directory: ./environments/dev
+        run: |
+          terraform init
+          terraform apply -var-file=terraform.tfvars -auto-approve
+
+      - name: Test ETL Job
+        run: |
+          JOB_NAME=$(terraform -chdir=environments/dev output -raw glue_job_name)
+          aws glue start-job-run --job-name $JOB_NAME
 
   plan-prod:
     name: Plan Prod
@@ -131,25 +131,25 @@ jobs:
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     environment: production
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-    
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
-        aws-region: ${{ env.AWS_REGION }}
-    
-    - name: Terraform Plan Prod
-      working-directory: ./environments/prod
-      run: |
-        terraform init
-        terraform plan -var-file=terraform.tfvars
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Plan Prod
+        working-directory: ./environments/prod
+        run: |
+          terraform init
+          terraform plan -var-file=terraform.tfvars
 
   deploy-prod:
     name: Deploy Prod
@@ -158,25 +158,25 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-    
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
-        aws-region: ${{ env.AWS_REGION }}
-    
-    - name: Deploy to Prod
-      working-directory: ./environments/prod
-      run: |
-        terraform init
-        terraform apply -var-file=terraform.tfvars -auto-approve
-    
-    - name: Notify Success
-      run: echo "🚀 Production deployment successful!"
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Prod
+        working-directory: ./environments/prod
+        run: |
+          terraform init
+          terraform apply -var-file=terraform.tfvars -auto-approve
+
+      - name: Notify Success
+        run: echo "🚀 Production deployment successful!"
