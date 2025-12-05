@@ -147,9 +147,7 @@ def main():
         snapshots_df = spark.sql(f"SELECT * FROM glue_catalog.{database_name}.{table_name}.snapshots")
         print("Table Snapshots:")
         snapshots_df.show()
-        
         print("ETL Job completed successfully!")
-        
     except Exception as e:
         print(f"Error in ETL job: {str(e)}")
         raise e
