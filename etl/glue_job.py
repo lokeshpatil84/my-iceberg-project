@@ -1,5 +1,4 @@
 import sys
-from typing import Any
 
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
